@@ -11,6 +11,8 @@ pub mod primitive;
 pub mod rasterizer;
 
 use raylib::prelude::*;
+use std::hint::black_box;
+use std::time::Instant;
 
 use crate::framebuffer::Framebuffer;
 use crate::primitive::primitive_assembly;
@@ -24,6 +26,11 @@ pub struct Uniforms {
 }
 
 fn main() {
+    if std::env::args().any(|arg| arg == "--benchmark") {
+        benchmark_rasterizers();
+        return;
+    }
+
     let (mut window, thread) = raylib::init()
         .size(800, 600)
         .title("Primer triangulo")
@@ -62,6 +69,56 @@ fn main() {
         framebuffer.clear();
         render(&mut framebuffer, &uniforms, &vertex_array);
         framebuffer.swap_buffers(&mut window, &thread);
+    }
+}
+
+fn benchmark_rasterizers() {
+    const RUNS: usize = 7;
+    const ITERATIONS_PER_RUN: usize = 100;
+
+    let positions = [
+        Vector3::new(100.0, 80.0, 0.0),
+        Vector3::new(400.0, 520.0, 0.0),
+        Vector3::new(700.0, 100.0, 0.0),
+    ];
+    let vertex_array: Vec<Vertex> = positions
+        .into_iter()
+        .map(|position| Vertex::new_with_color(position, Vector3::new(1.0, 1.0, 1.0)))
+        .collect();
+    let uniforms = Uniforms {
+        model_matrix: Matrix::identity(),
+    };
+    let transformed_vertices: Vec<Vertex> = vertex_array
+        .iter()
+        .map(|vertex| vertex_shader(vertex, &uniforms))
+        .collect();
+    let triangles = primitive_assembly(&transformed_vertices);
+
+    for mode in [TriangleMode::FilledBarycentric, TriangleMode::FilledScanline] {
+        // Warm up once, outside the measured batches.
+        black_box(rasterize(black_box(&triangles), mode));
+
+        let mut samples = Vec::with_capacity(RUNS);
+        for _ in 0..RUNS {
+            let start = Instant::now();
+            for _ in 0..ITERATIONS_PER_RUN {
+                let fragments = rasterize(black_box(&triangles), mode);
+                black_box(fragments);
+            }
+            samples.push(start.elapsed());
+        }
+
+        samples.sort_unstable();
+        let median = samples[RUNS / 2];
+        let fragment_count = rasterize(&triangles, mode).len();
+        let name = match mode {
+            TriangleMode::FilledBarycentric => "baricéntrico",
+            TriangleMode::FilledScanline => "scanline",
+            TriangleMode::Wireframe => unreachable!(),
+        };
+        println!(
+            "{name}: mediana de {RUNS} ejecuciones × {ITERATIONS_PER_RUN}: {median:?}; {fragment_count} fragmentos"
+        );
     }
 }
 
