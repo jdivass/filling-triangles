@@ -1,5 +1,6 @@
 use raylib::prelude::*;
 
+use crate::fragment::Fragment;
 use crate::vertex::Vertex;
 use crate::Uniforms;
 
@@ -41,4 +42,8 @@ pub fn vertex_shader(vertex: &Vertex, uniforms: &Uniforms) -> Vertex {
         transformed.z,
     );
     result
+}
+
+pub fn fragment_shader(fragment: &Fragment) -> Vector3 {
+    fragment.color
 }

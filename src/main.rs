@@ -8,13 +8,14 @@ pub mod fragment;
 pub mod vertex;
 pub mod shaders;
 pub mod primitive;
+pub mod rasterizer;
 
 use raylib::prelude::*;
 
 use crate::framebuffer::Framebuffer;
 use crate::primitive::primitive_assembly;
-use crate::shaders::vertex_shader;
-use crate::triangle::triangle;
+use crate::rasterizer::rasterize;
+use crate::shaders::{fragment_shader, vertex_shader};
 use crate::vertex::Vertex;
 
 pub struct Uniforms {
@@ -77,17 +78,16 @@ fn render(
     // 2. Ensamblaje de primitivas: agrupar vértices procesados en triángulos.
     let triangles = primitive_assembly(&processed_vertices);
 
-    // 3. Rasterización: obtener los fragmentos de cada triángulo.
-    for tri in &triangles {
-        let fragments = triangle(&tri[0], &tri[1], &tri[2]);
+    // 3. Rasterización: reunir los fragmentos de todos los triángulos.
+    let fragments = rasterize(&triangles);
 
-        // 4. Procesamiento de fragmentos: escribirlos en el framebuffer.
-        for fragment in fragments {
-            framebuffer.point(
-                fragment.position.x as i32,
-                fragment.position.y as i32,
-                fragment.color,
-            );
-        }
+    // 4. Procesamiento de fragmentos: escribirlos en el framebuffer.
+    for fragment in fragments {
+        let color = fragment_shader(&fragment);
+        framebuffer.point(
+            fragment.position.x as i32,
+            fragment.position.y as i32,
+            color,
+        );
     }
 }
