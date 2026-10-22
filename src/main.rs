@@ -16,6 +16,7 @@ use crate::framebuffer::Framebuffer;
 use crate::primitive::primitive_assembly;
 use crate::rasterizer::rasterize;
 use crate::shaders::{fragment_shader, vertex_shader};
+use crate::triangle::TriangleMode;
 use crate::vertex::Vertex;
 
 pub struct Uniforms {
@@ -79,7 +80,7 @@ fn render(
     let triangles = primitive_assembly(&processed_vertices);
 
     // 3. Rasterización: reunir los fragmentos de todos los triángulos.
-    let fragments = rasterize(&triangles);
+    let fragments = rasterize(&triangles, TriangleMode::FilledBarycentric);
 
     // 4. Procesamiento de fragmentos: escribirlos en el framebuffer.
     for fragment in fragments {
