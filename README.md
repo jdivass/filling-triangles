@@ -38,13 +38,29 @@ Se basa en calcular un cuadro delimitador (bounding box) alrededor del triángul
 
 ### Algoritmo 2: Lineas horizontales
 
-Consiste en ordenar los vértices del triángulo de menor a mayor en el eje Y y dividirlo en subtriángulos con base horizontal para trazar líneas de píxeles entre los bordes izquierdo y derecho.
+Avanza una fila a la vez, calcula las intersecciones de la fila con los lados del triángulo y genera fragmentos entre los extremos del tramo interior.
 
 
 ## Resultados del benchmark
 
 
-| Algoritmo | Tiempo promedio de 100 rasterizaciones, realizado 7 veces | Fragmentos |
-| --------- | --------------------------------------------------------- | ---------- |
-| Barycentric | 359.883966ms | 129030 |
-| Scanline  | 282.8720 | 129030 |
+| Algoritmo | Mediana de 7 muestras de 100 rasterizaciones | Fragmentos por rasterización |
+| --------- | --------------------------------------------- | ---------------------------- |
+| Baricéntrico | 851.636097 ms | 129030 |
+| Scanline | 680.072074 ms | 129030 |
+
+Las mediciones corresponden a un triángulo grande y dependen del equipo y de la carga del sistema.
+
+## Perfilado
+
+El modo `--benchmark-triangles` rasteriza repetidamente el triángulo y termina sin abrir la ventana. Para medirlo con `cargo-flamegraph` y `perf` instalados:
+
+```bash
+cargo flamegraph -- --benchmark-triangles
+```
+
+El comando genera `flamegraph.svg` en la raíz del proyecto.
+
+```bash
+cargo run --release -- --benchmark-triangles
+```

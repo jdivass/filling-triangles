@@ -26,7 +26,9 @@ pub struct Uniforms {
 }
 
 fn main() {
-    if std::env::args().any(|arg| arg == "--benchmark") {
+    if std::env::args().any(|arg| {
+        arg == "--benchmark" || arg == "--benchmark-triangles"
+    }) {
         benchmark_rasterizers();
         return;
     }
