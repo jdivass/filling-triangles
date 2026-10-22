@@ -7,10 +7,12 @@ pub mod object;
 pub mod fragment;
 pub mod vertex;
 pub mod shaders;
+pub mod primitive;
 
 use raylib::prelude::*;
 
 use crate::framebuffer::Framebuffer;
+use crate::primitive::primitive_assembly;
 use crate::shaders::vertex_shader;
 use crate::triangle::triangle;
 use crate::vertex::Vertex;
@@ -72,10 +74,12 @@ fn render(
         .map(|vertex| vertex_shader(vertex, uniforms))
         .collect();
 
-    // 2. Ensamblaje de primitivas: cada grupo completo de tres forma un triángulo.
-    for vertices in processed_vertices.chunks_exact(3) {
-        // 3. Rasterización: obtener los fragmentos del triángulo.
-        let fragments = triangle(&vertices[0], &vertices[1], &vertices[2]);
+    // 2. Ensamblaje de primitivas: agrupar vértices procesados en triángulos.
+    let triangles = primitive_assembly(&processed_vertices);
+
+    // 3. Rasterización: obtener los fragmentos de cada triángulo.
+    for tri in &triangles {
+        let fragments = triangle(&tri[0], &tri[1], &tri[2]);
 
         // 4. Procesamiento de fragmentos: escribirlos en el framebuffer.
         for fragment in fragments {
