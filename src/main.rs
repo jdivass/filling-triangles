@@ -6,10 +6,12 @@ pub mod transform;
 pub mod object;
 pub mod fragment;
 pub mod vertex;
+pub mod shaders;
 
 use raylib::prelude::*;
 
 use crate::framebuffer::Framebuffer;
+use crate::shaders::vertex_shader;
 use crate::triangle::triangle;
 use crate::vertex::Vertex;
 
@@ -61,12 +63,21 @@ fn main() {
 
 fn render(
     framebuffer: &mut Framebuffer,
-    _uniforms: &Uniforms,
+    uniforms: &Uniforms,
     vertex_array: &[Vertex],
 ) {
-    for vertices in vertex_array.chunks_exact(3) {
+    // 1. Procesamiento de vértices: aplicar la misma matriz compartida a cada vértice.
+    let processed_vertices: Vec<Vertex> = vertex_array
+        .iter()
+        .map(|vertex| vertex_shader(vertex, uniforms))
+        .collect();
+
+    // 2. Ensamblaje de primitivas: cada grupo completo de tres forma un triángulo.
+    for vertices in processed_vertices.chunks_exact(3) {
+        // 3. Rasterización: obtener los fragmentos del triángulo.
         let fragments = triangle(&vertices[0], &vertices[1], &vertices[2]);
 
+        // 4. Procesamiento de fragmentos: escribirlos en el framebuffer.
         for fragment in fragments {
             framebuffer.point(
                 fragment.position.x as i32,
