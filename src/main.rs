@@ -17,6 +17,10 @@ use crate::triangle::draw_triangle;
 const WIDTH: u32 = 800;
 const HEIGHT: u32 = 600;
 
+pub struct Uniforms {
+    pub model_matrix: Matrix,
+}
+
 fn main() {
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("model/object.obj");
     let obj = load_obj(path.to_str().unwrap()).expect("No se pudo cargar el OBJ");
@@ -24,7 +28,11 @@ fn main() {
     let mut framebuffer = Framebuffer::new(WIDTH, HEIGHT, Color::BLACK);
     framebuffer.set_current_color(Color::WHITE);
 
-    render(&mut framebuffer, &obj);
+    // Una misma matriz de modelo se comparte con todos los vértices del dibujo.
+    let uniforms = Uniforms {
+        model_matrix: Matrix::identity(),
+    };
+    render(&mut framebuffer, &uniforms, &obj);
 
     framebuffer.render_to_file("render.png");
     println!(
@@ -34,10 +42,16 @@ fn main() {
     );
 }
 
-fn render(framebuffer: &mut Framebuffer, obj: &Obj) {
+fn render(framebuffer: &mut Framebuffer, uniforms: &Uniforms, obj: &Obj) {
     framebuffer.clear();
 
-    if obj.vertices.is_empty() {
+    let transformed_vertices: Vec<Vector3> = obj
+        .vertices
+        .iter()
+        .map(|vertex| vertex.transform(uniforms.model_matrix))
+        .collect();
+
+    if transformed_vertices.is_empty() {
         return;
     }
 
@@ -46,7 +60,7 @@ fn render(framebuffer: &mut Framebuffer, obj: &Obj) {
     let mut min_y = f32::MAX;
     let mut max_y = f32::MIN;
 
-    for v in &obj.vertices {
+    for v in &transformed_vertices {
         min_x = min_x.min(v.x);
         max_x = max_x.max(v.x);
         min_y = min_y.min(v.y);
@@ -76,9 +90,9 @@ fn render(framebuffer: &mut Framebuffer, obj: &Obj) {
 
     // Cada triángulo son 3 índices consecutivos
     for tri in obj.indices.chunks_exact(3) {
-        let a = to_screen(obj.vertices[tri[0]]);
-        let b = to_screen(obj.vertices[tri[1]]);
-        let c = to_screen(obj.vertices[tri[2]]);
+        let a = to_screen(transformed_vertices[tri[0]]);
+        let b = to_screen(transformed_vertices[tri[1]]);
+        let c = to_screen(transformed_vertices[tri[2]]);
         draw_triangle(framebuffer, a, b, c);
     }
 
