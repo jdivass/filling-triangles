@@ -4,11 +4,13 @@ pub mod framebuffer;
 pub mod triangle;
 pub mod transform;
 pub mod object;
+pub mod fragment;
 use std::path::Path;
 
 use raylib::prelude::*;
 
 use crate::framebuffer::Framebuffer;
+use crate::fragment::Fragment;
 use crate::object::{load_obj, Obj};
 use crate::triangle::draw_triangle;
 
@@ -78,5 +80,24 @@ fn render(framebuffer: &mut Framebuffer, obj: &Obj) {
         let b = to_screen(obj.vertices[tri[1]]);
         let c = to_screen(obj.vertices[tri[2]]);
         draw_triangle(framebuffer, a, b, c);
+    }
+
+    // Los fragmentos se almacenan primero y luego se escriben al framebuffer.
+    let fragments = vec![
+        Fragment::new(100.0, 80.0, Vector3::new(1.0, 0.0, 0.0), 0.0),
+        Fragment::new(101.0, 80.0, Vector3::new(0.0, 1.0, 0.0), 0.0),
+        Fragment::new(102.0, 80.0, Vector3::new(0.0, 0.0, 1.0), 0.0),
+        // Al compartir posición, el último fragmento deja el píxel amarillo.
+        Fragment::new(100.0, 80.0, Vector3::new(1.0, 1.0, 0.0), 0.0),
+        // Está fuera del framebuffer y no se dibuja.
+        Fragment::new(-1.0, 80.0, Vector3::new(1.0, 1.0, 1.0), 0.0),
+    ];
+
+    for fragment in &fragments {
+        framebuffer.point(
+            fragment.position.x as i32,
+            fragment.position.y as i32,
+            fragment.color,
+        );
     }
 }

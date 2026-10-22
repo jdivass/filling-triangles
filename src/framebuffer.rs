@@ -30,6 +30,17 @@ impl Framebuffer {
         }
     }
 
+    pub fn point(&mut self, x: i32, y: i32, color: Vector3) {
+        if x >= 0 && y >= 0 && (x as u32) < self.width && (y as u32) < self.height {
+            let to_byte = |component: f32| (component.clamp(0.0, 1.0) * 255.0) as u8;
+            self.color_buffer.draw_pixel(
+                x,
+                y,
+                Color::new(to_byte(color.x), to_byte(color.y), to_byte(color.z), 255),
+            );
+        }
+    }
+
     pub fn set_background_color(&mut self, color: Color){
         self.background_color = color;
     }
