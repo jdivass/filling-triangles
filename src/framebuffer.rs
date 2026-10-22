@@ -1,22 +1,27 @@
 use raylib::prelude::*;
+use raylib::core::texture::RaylibTexture2D;
 
 pub struct Framebuffer {
     pub height: u32,
     pub width: u32,
     pub color_buffer: Image,
     background_color: Color,
-    current_color: Color
+    current_color: Color,
+    texture: Option<Texture2D>,
 }
 
 impl Framebuffer {
-    pub fn new(width: u32, height: u32, background_color: Color) -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
+        let background_color = Color::BLACK;
         let color_buffer = Image::gen_image_color(width.try_into().unwrap(), height.try_into().unwrap(), background_color);
         Framebuffer { 
             height, 
             width, 
             color_buffer, 
             background_color, 
-            current_color: Color::WHITE, }
+            current_color: Color::WHITE,
+            texture: None,
+        }
     }
 
     pub fn clear(&mut self){
@@ -41,12 +46,28 @@ impl Framebuffer {
         }
     }
 
-    pub fn set_background_color(&mut self, color: Color){
-        self.background_color = color;
+    pub fn set_background_color(&mut self, color: Vector3){
+        let to_byte = |component: f32| (component.clamp(0.0, 1.0) * 255.0) as u8;
+        self.background_color = Color::new(to_byte(color.x), to_byte(color.y), to_byte(color.z), 255);
     }
 
     pub fn set_current_color(&mut self, color: Color){
         self.current_color = color;
+    }
+
+    pub fn init_texture(&mut self, window: &mut RaylibHandle, thread: &RaylibThread) {
+        self.texture = Some(window.load_texture_from_image(thread, &self.color_buffer)
+            .expect("No se pudo crear la textura del framebuffer"));
+    }
+
+    pub fn swap_buffers(&mut self, window: &mut RaylibHandle, thread: &RaylibThread) {
+        let pixels = self.color_buffer.get_image_data_u8(false);
+        if let Some(texture) = &mut self.texture {
+            texture.update_texture(&pixels).expect("No se pudo actualizar la textura");
+            let mut drawing = window.begin_drawing(thread);
+            drawing.clear_background(Color::BLACK);
+            drawing.draw_texture(texture, 0, 0, Color::WHITE);
+        }
     }
 
     pub fn render_to_file(&self, file_path: &str){
